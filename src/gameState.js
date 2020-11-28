@@ -1,4 +1,4 @@
-import { modFox, modScene } from "./ui";
+import { modFox, modScene, togglePoopBag } from "./ui";
 import {
   RAIN_CHANCE,
   SCENES,
@@ -15,6 +15,7 @@ const gameState = {
   sleepTime: -1,
   hungryTime: -1,
   dieTime: -1,
+  poopTime: -1,
   timeToStartCelebtating: -1,
   timeToEndCelebrating: -1,
   tick() {
@@ -26,12 +27,14 @@ const gameState = {
       this.sleep();
     } else if (this.clock === this.hungryTime) {
       this.getHungry();
-    } else if (this.clock === this.dieTime) {
-      this.die();
     } else if (this.clock === this.timeToStartCelebtating) {
       this.startCelebrating();
     } else if (this.clock === this.timeToEndCelebrating) {
       this.endCelebrating();
+    } else if (this.clock === this.poopTime) {
+      this.poop();
+    } else if (this.clock === this.dieTime) {
+      this.die();
     }
     return this.clock;
   },
@@ -64,6 +67,13 @@ const gameState = {
     this.hungryTime = -1;
     modFox("hungry");
   },
+
+  poop() {
+    this.current = "POOPING";
+    this.poopTime = -1;
+    this.dieTime = getNextDieTime(this.clock);
+    modFox("pooping");
+  },
   die() {
     console.log("die");
   },
@@ -78,6 +88,7 @@ const gameState = {
     this.timeToEndCelebrating = -1;
     this.current = "IDLING";
     this.determineFoxState();
+    togglePoopBag(false);
   },
   determineFoxState() {
     if (this.current === "IDLING") {
@@ -106,6 +117,7 @@ const gameState = {
         this.changeWeather();
         break;
       case "poop":
+        console.log("poop");
         this.cleanUpPoop();
         break;
       case "fish":
@@ -117,16 +129,22 @@ const gameState = {
     console.log("weather change");
   },
   cleanUpPoop() {
-    console.log("clean up poop");
+    if (this.current === "POOPING") {
+      this.dieTime = -1;
+      togglePoopBag(true);
+      this.startCelebrating();
+      this.hungryTime = getNextHungerTime(this.clock);
+    }
   },
   feed() {
-    if (this.current != "HUNGRY") {
+    if (this.current !== "HUNGRY") {
       return;
     }
     this.current = "FEEDING";
     this.dieTime = -1;
     this.poopTime = getNextPoopTime(this.clock);
     modFox("eating");
+    console.log(this.poopTime);
     this.timeToStartCelebtating = this.clock + 1;
   },
 };
